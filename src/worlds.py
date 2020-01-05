@@ -1,10 +1,19 @@
 # -*- coding: utf-8 -*-
-import matplotlib.pyplot as plt
+from matplotlib import (
+    pyplot as plt,
+    animation as anm,
+    use as enable_plt_option
+)
+# notebook上でアニメーションできるようになるらしい
+enable_plt_option('nbagg')
 
 class World(object):
-    def __init__(self):
+    def __init__(self, debuggable):
         # 様々なオブジェクトのいれもの
         self.objects = []
+        # notebook側でエラーがわかりにくいので、必要に応じてメッセージを出すためのフラグ
+        self.debuggable = debuggable
+        self.ani = None
 
     def append(self, obj):
         if not hasattr(obj, 'draw'):
@@ -28,7 +37,23 @@ class World(object):
         ax.set_xlabel('X', fontsize=20)
         ax.set_ylabel('Y', fontsize=20)
 
-        for obj in self.objects:
-            obj.draw(ax)
+        elems = []
 
-        plt.show()
+        if self.debuggable:
+            for i in range(1000):
+                self.one_step(i, elems, ax)
+        else:
+            self.ani = anm.FuncAnimation(
+                fig, self.one_step, fargs=(elems, ax),
+                frames=10, interval=1000, repeat=False)
+            plt.show()
+
+    def one_step(self, i, elems, ax):
+        u"""1コマすすめる"""
+        while elems:
+            elems.pop().remove()
+
+        elems.append(ax.text(-4.4, 4.5, 't=' + str(i), fontsize=10))
+
+        for obj in self.objects:
+            obj.draw(ax, elems)

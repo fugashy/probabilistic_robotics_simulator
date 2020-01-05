@@ -20,11 +20,12 @@ class IdealRobot():
         self.r = 0.2
         self.color = color
 
-    def draw(self, ax):
+    def draw(self, ax, elems):
         u"""描画
 
         Args:
             ax(AxesSubplot): 描画オブジェクト
+            elems(???)
 
         Returns:
             なし
@@ -34,8 +35,10 @@ class IdealRobot():
         # ロボットの向きを示す線分
         xn = x + self.r * cos(theta)
         yn = y + self.r * sin(theta)
-        ax.plot([x, xn], [y, yn], color=self.color)
+        # sx.plotがlistを返すので+=とする not append
+        elems += ax.plot([x, xn], [y, yn], color=self.color)
 
         c = patches.Circle(
             xy=(x, y), radius=self.r, fill=False, color=self.color)
-        ax.add_patch(c)
+
+        elems.append(ax.add_patch(c))
