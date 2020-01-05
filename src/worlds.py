@@ -8,7 +8,16 @@ from matplotlib import (
 enable_plt_option('nbagg')
 
 class World(object):
-    def __init__(self, debuggable):
+    def __init__(self, time_span, time_interval, debuggable=False):
+        u"""主にシミュレート時間の設定
+
+        Args:
+            time_span(float): 何秒シミュレートするのか
+            time_interval(float): 何秒間隔でシミュレートするか
+            debuggable(bool): アニメートさせるかどうか
+        """
+        self.time_span = time_span
+        self.time_interval = time_interval
         # 様々なオブジェクトのいれもの
         self.objects = []
         # notebook側でエラーがわかりにくいので、必要に応じてメッセージを出すためのフラグ
@@ -30,6 +39,7 @@ class World(object):
         ラベルの表示
         """
         fig = plt.figure(figsize=(8, 8))
+        fig.suptitle('World')
         ax = fig.add_subplot(111)
         ax.set_aspect('equal')
         ax.set_xlim(-5, 5)
@@ -45,7 +55,8 @@ class World(object):
         else:
             self.ani = anm.FuncAnimation(
                 fig, self.one_step, fargs=(elems, ax),
-                frames=10, interval=1000, repeat=False)
+                frames=int(self.time_span / self.time_interval),
+                interval=int(self.time_interval * 1000), repeat=False)
             plt.show()
 
     def one_step(self, i, elems, ax):
@@ -53,9 +64,12 @@ class World(object):
         while elems:
             elems.pop().remove()
 
-        elems.append(ax.text(-4.4, 4.5, 't=' + str(i), fontsize=10))
+        elems.append(ax.text(
+            -4.4, 4.5,
+            't= %.2f[s]' % (self.time_interval * i),
+            fontsize=10))
 
         for obj in self.objects:
             obj.draw(ax, elems)
             if hasattr(obj, 'one_step'):
-                obj.one_step(1.0)
+                obj.one_step(self.time_interval)
