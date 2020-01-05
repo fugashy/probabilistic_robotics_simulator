@@ -11,7 +11,7 @@
 
 | Library | Version |
 | ---- | ---- |
-| python | 3.5.6 |
+| python | 3.7.5 |
 | numpy | 1.18.0 |
 | scipy | 1.4.1 |
 | matplotlib | 3.0.3 |
