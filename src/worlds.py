@@ -57,3 +57,5 @@ class World(object):
 
         for obj in self.objects:
             obj.draw(ax, elems)
+            if hasattr(obj, 'one_step'):
+                obj.one_step(1.0)

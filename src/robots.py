@@ -11,7 +11,7 @@ class IdealRobot():
     u"""理想的な2D移動をするロボット"""
 
     @classmethod
-    def state_translation(cls, nu, omega, time, pose):
+    def state_transition(cls, nu, omega, time, pose):
         u"""状態遷移関数
 
         角速度omegaが0のときとそうでない場合で変わる
@@ -36,26 +36,30 @@ class IdealRobot():
         translate_state_omega_is_not_almost_zero = lambda nu, theta_0, omega, time: \
             np.array([
                 nu / omega * (sin(theta_0 + omega * time) - sin(theta_0)),
-                nu / omega * (cos(theta_0 + omega * time) - cos(theta_0)),
+                nu / omega * (-cos(theta_0 + omega * time) + cos(theta_0)),
                 omega * time])
 
         if fabs(omega) < 1e-10:
-            return translate_state_omega_is_almost_zero(
+            return pose + translate_state_omega_is_almost_zero(
                 nu, theta_0, omega, time)
         else:
-            return translate_state_omega_is_not_almost_zero(
+            return pose + translate_state_omega_is_not_almost_zero(
                 nu, theta_0, omega, time)
 
-    def __init__(self, pose, color):
+    def __init__(self, pose, agent=None, color='black'):
         u"""初期位置・色の設定
 
         Args:
             pose(np.array): [x(m), y(m), yaw(rad)]
+            agent(Agent): エージェント
             color(string): red, green, blue, black, etc...
         """
         self.pose = pose
         self.r = 0.2
         self.color = color
+        self.agent = agent
+        # 軌跡を描画するため
+        self.poses = [pose]
 
     def draw(self, ax, elems):
         u"""描画
@@ -79,3 +83,20 @@ class IdealRobot():
             xy=(x, y), radius=self.r, fill=False, color=self.color)
 
         elems.append(ax.add_patch(c))
+
+        self.poses.append(self.pose)
+        elems += ax.plot(
+            [e[0] for e in self.poses],
+            [e[1] for e in self.poses],
+            linewidth=0.5, color=self.color)
+
+    def one_step(self, time_interval):
+        u"""1コマすすめる
+
+        Agentが存在する場合は、制御指令を得て位置を更新する
+        """
+        if self.agent is None:
+            return
+
+        nu, omega = self.agent.decision()
+        self.pose = self.state_transition(nu, omega, time_interval, self.pose)
