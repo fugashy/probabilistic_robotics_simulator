@@ -22,7 +22,7 @@ class World(object):
         """
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111)
-        ax.set_axpect('equal')
+        ax.set_aspect('equal')
         ax.set_xlim(-5, 5)
         ax.set_ylim(-5, 5)
         ax.set_xlabel('X', fontsize=20)
