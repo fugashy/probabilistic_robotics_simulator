@@ -46,18 +46,20 @@ class IdealRobot():
             return pose + translate_state_omega_is_not_almost_zero(
                 nu, theta_0, omega, time)
 
-    def __init__(self, pose, agent=None, color='black'):
+    def __init__(self, pose, agent=None, sensor=None, color='black'):
         u"""初期位置・色の設定
 
         Args:
             pose(np.array): [x(m), y(m), yaw(rad)]
             agent(Agent): エージェント
+            sensor(IdealCamera): 観測者
             color(string): red, green, blue, black, etc...
         """
         self.pose = pose
         self.r = 0.2
         self.color = color
         self.agent = agent
+        self.sensor = sensor
         # 軌跡を描画するため
         self.poses = [pose]
 
@@ -90,6 +92,10 @@ class IdealRobot():
             [e[1] for e in self.poses],
             linewidth=0.5, color=self.color)
 
+        if self.sensor is not None and len(self.poses) > 1:
+            # センサ値を得たときの時刻が-2要素にある...らしい
+            self.sensor.draw(ax, elems, self.poses[-2])
+
     def one_step(self, time_interval):
         u"""1コマすすめる
 
@@ -98,5 +104,8 @@ class IdealRobot():
         if self.agent is None:
             return
 
-        nu, omega = self.agent.decision()
+        if self.sensor is not None:
+            obs = self.sensor.data(self.pose)
+
+        nu, omega = self.agent.decision(obs)
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
