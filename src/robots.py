@@ -104,6 +104,7 @@ class IdealRobot():
         if self.agent is None:
             return
 
+        obs = None
         if self.sensor is not None:
             obs = self.sensor.data(self.pose)
 
