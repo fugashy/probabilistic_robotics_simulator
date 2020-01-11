@@ -4,7 +4,6 @@ u"""マップクラスモジュール
 ランドマークを保持する
 """
 
-
 class Map():
     def __init__(self):
         self.landmarks = []
@@ -15,7 +14,7 @@ class Map():
         Args:
             landmark(landmarks.Landmark): ランドマーク
         """
-        landmark.id = len(self.landmarks) - 1
+        landmark.id = len(self.landmarks)
         self.landmarks.append(landmark)
 
     def draw(self, ax, elems):
