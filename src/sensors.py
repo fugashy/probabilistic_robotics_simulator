@@ -2,7 +2,7 @@
 u"""センサー"""
 
 from math import atan2
-from numpy as np
+import numpy as np
 
 
 class IdealCamera():
@@ -27,7 +27,7 @@ class IdealCamera():
         """
         observed = []
         for lm in self.map.landmarks:
-            p = self.ovservation_function(cam_pose, lm.pos)
+            p = self.observation_function(cam_pose, lm.pos)
             observed.append((p, lm.id))
 
         return observed
