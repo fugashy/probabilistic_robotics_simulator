@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 u"""センサー"""
 
-from math import atan2
+from math import atan2, cos, sin
 import numpy as np
 
 
@@ -15,6 +15,8 @@ class IdealCamera():
     def __init__(self, env_map):
         u"""マップの登録"""
         self.map = env_map
+        # 最後に計測したときの結果
+        self.lastdata = []
 
     def data(self, cam_pose):
         u"""与えられた姿勢からのランドマークの観測結果を返す
@@ -30,7 +32,18 @@ class IdealCamera():
             p = self.observation_function(cam_pose, lm.pos)
             observed.append((p, lm.id))
 
-        return observed
+        self.lastdata = observed
+
+        return self.lastdata
+
+    def draw(self, ax, elems, cam_pose):
+        x, y, theta = cam_pose
+
+        for lm in self.lastdata:
+            distance, direction = lm[0][0], lm[0][1]
+            lx = x + distance * cos(direction + theta)
+            ly = y + distance * sin(direction + theta)
+            elems += ax.plot([x, lx], [y, ly], color='pink')
 
     @classmethod
     def observation_function(cls, cam_pos, obj_pos):
