@@ -9,12 +9,17 @@ class IdealCamera():
     u"""理想的な観測をするカメラ
 
     Landmarkを観測し，距離と角度を求める
-    オクルージョンなどはなく，どんなに遠くても，画角から外れていても観測可能!
     """
 
-    def __init__(self, env_map):
-        u"""マップの登録"""
+    def __init__(
+            self,
+            env_map,
+            distance_range=(0.5, 6.0),
+            direction_range=(-np.pi / 3., np.pi / 3.)):
+        u"""マップの登録, 有効範囲の設定"""
         self.map = env_map
+        self.distance_range = distance_range
+        self.direction_range = direction_range
         # 最後に計測したときの結果
         self.lastdata = []
 
@@ -30,7 +35,8 @@ class IdealCamera():
         observed = []
         for lm in self.map.landmarks:
             p = self.observation_function(cam_pose, lm.pos)
-            observed.append((p, lm.id))
+            if self._visible(p):
+                observed.append((p, lm.id))
 
         self.lastdata = observed
 
@@ -54,7 +60,7 @@ class IdealCamera():
             obj_pos(np.array): 観測対象位置姿勢(x, y)
 
         Returns:
-            (np.array): 観測結果
+            (np.array): 観測結果[距離, 角度]
         """
         # 距離を求める
         # 観測対象は点なので角度は使わない
@@ -69,4 +75,20 @@ class IdealCamera():
             phi += 2. * np.pi
 
         # *diffでhypotの各引数にx, yとして展開されて渡される
-        return np.array([np.hypot(*diff), phi]).T
+        return np.array([np.hypot(*diff), normalized_phi]).T
+
+    def _visible(self, polar_pos):
+        u"""画角に入っているかどうか，距離が有効かどうか
+
+        Args:
+            polar_pos(np.array): 対象との距離・角度
+        """
+        if polar_pos is None:
+            return False
+
+        in_valid_distance = \
+            self.distance_range[0] <= polar_pos[0] <= self.distance_range[1]
+        in_valid_direction = \
+            self.direction_range[0] <= polar_pos[1] <= self.direction_range[1]
+
+        return in_valid_distance and in_valid_direction
