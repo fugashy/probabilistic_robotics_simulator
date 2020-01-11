@@ -17,11 +17,9 @@ class Landmark:
         参照で渡されている描画要素elemsを追加するのが目的
 
         Args:
-            ax():
-            elems():
+            ax(matplotlib.axes,_subplots.AxesSubplot): サブプロットオブジェクト
+            elems([matplotlib.XXX]): 描画可能なオブジェクト(Text, PathCollectionなど)
         """
-        print('type of ax = {}'.format(type(ax)))
-        print('type of elems = {}'.format(type(elems)))
         c = ax.scatter(
             self.pos[0], self.pos[1],
             s=100, marker='*', label='landmark', color='orange')

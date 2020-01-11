@@ -65,8 +65,8 @@ class IdealRobot():
         u"""描画
 
         Args:
-            ax(AxesSubplot): 描画オブジェクト
-            elems(???)
+            ax(matplotlib.axes,_subplots.AxesSubplot): サブプロットオブジェクト
+            elems([matplotlib.XXX]): 描画可能なオブジェクト(Text, PathCollectionなど)
 
         Returns:
             なし
