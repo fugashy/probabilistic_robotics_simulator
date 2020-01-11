@@ -95,6 +95,8 @@ class IdealRobot():
         if self.sensor is not None and len(self.poses) > 1:
             # センサ値を得たときの時刻が-2要素にある...らしい
             self.sensor.draw(ax, elems, self.poses[-2])
+        if self.agent is not None and hasattr(self.agent, 'draw'):
+            self.agent.draw(ax, elems)
 
     def one_step(self, time_interval):
         u"""1コマすすめる
