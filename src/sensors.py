@@ -69,10 +69,8 @@ class IdealCamera():
         # 角度を求める
         # 正規化もする
         phi = atan2(diff[1], diff[0]) - cam_pos[2]
-        while phi >= np.pi:
-            phi -= 2. * np.pi
-        while phi < np.pi:
-            phi += 2. * np.pi
+        # http://hima-tubusi.blogspot.com/2016/12/blog-post_12.html
+        normalized_phi = atan2(sin(phi), cos(phi))
 
         # *diffでhypotの各引数にx, yとして展開されて渡される
         return np.array([np.hypot(*diff), normalized_phi]).T
