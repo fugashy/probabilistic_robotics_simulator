@@ -4,7 +4,7 @@ u"""ランドマーク"""
 import numpy as np
 
 
-class Landmark:
+class Point2DLandmark:
     u"""2Dの点ランドマーク"""
 
     def __init__(self, x, y):
