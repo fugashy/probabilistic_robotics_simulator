@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 u"""センサー"""
 
-from math import atan2, cos, sin
+from math import atan2, cos, sin, pi
 import numpy as np
+from scipy.stats import norm, uniform
 
 
 class IdealCamera():
@@ -90,3 +91,39 @@ class IdealCamera():
             self.direction_range[0] <= polar_pos[1] <= self.direction_range[1]
 
         return in_valid_distance and in_valid_direction
+
+
+class Camera(IdealCamera):
+    def __init__(self,
+            env_map,
+            distance_range=(0.5, 6.0), direction_range=(-pi / 3., pi / 3),
+            distance_noise_rate=0.1, direction_noise_rate=pi/90.):
+        super().__init__(env_map, distance_range, direction_range)
+
+        self.distance_noise_rate = distance_noise_rate
+        self.direction_noise_rate = direction_noise_rate
+
+    def _noise(self, relpos):
+        ell = norm.rvs(loc=relpos[0], scale=relpos[0] * self.distance_noise_rate)
+        phi = norm.rvs(loc=relpos[1], scale=self.direction_noise_rate)
+        return np.array([ell, phi]).T
+
+    def data(self, cam_pose):
+        u"""与えられた姿勢からのランドマークの観測結果を返す
+
+        Args:
+            cam_pose(np.array): 観測位置姿勢
+
+        Returns:
+            ((np.array, int)): 観測結果とID
+        """
+        observed = []
+        for lm in self.map.landmarks:
+            z = self.observation_function(cam_pose, lm.pos)
+            if self._visible(z):
+                z = self._noise(z)
+                observed.append((z, lm.id))
+
+        self.lastdata = observed
+
+        return self.lastdata
