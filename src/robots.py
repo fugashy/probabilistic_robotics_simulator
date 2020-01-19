@@ -122,7 +122,9 @@ class Robot(IdealRobot):
     """
 
     def __init__(self, pose, agent=None, sensor=None,
-            color='black', noise_per_meter=5., noise_std=pi / 60.):
+            color='black',
+            noise_per_meter=5., noise_std=pi / 60.,
+            bias_rate_stds=(0.1, 0.1)):
         u"""初期位置・色・ノイズなどの設定
 
         Args:
@@ -132,6 +134,7 @@ class Robot(IdealRobot):
             color(string): red, green, blue, black, etc...
             noise_per_meter(float): 1mあたりになにか踏んでしまう回数
             noise_std(float): 踏んだときに姿勢に与えるノイズの標準偏差
+            bias_rate_stds((float, float)): 速度指令・角速度指令に与えるバイアスの標準偏差
         """
         super().__init__(pose, agent, sensor, color)
 
@@ -140,9 +143,17 @@ class Robot(IdealRobot):
         # exponは指数分布の機能を提供するメソッド
         # 1e-100で0割対策
         self.noise_pdf = expon(scale=1./(1e-100 + noise_per_meter))
-        # rvsはドローするための関数
+        # rvsはドローするための関数(Random variates 確率変数)
         self.distance_until_noise = self.noise_pdf.rvs()
         self.theta_noise = norm(scale=noise_std)
+
+        # 指令加えるバイアス
+        # N(0, std)に従う分布からドローしておく
+        # locは期待値
+        # 1.0を設定することで，平均値を引いたときは1.0となる
+        # こういう設定にしておくことでrateになる
+        self.bias_rate_nu = norm.rvs(loc=1.0, scale=bias_rate_stds[0])
+        self.bias_rate_omega = norm.rvs(loc=1.0, scale=bias_rate_stds[1])
 
     def one_step(self, time_interval):
         u"""一コマすすめる
@@ -158,6 +169,8 @@ class Robot(IdealRobot):
             obs = self.sensor.data(self.pose)
 
         nu, omega = self.agent.decision(obs)
+        nu, omega = self._bias(nu, omega)
+
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
         self.pose = self._noise(self.pose, nu, omega, time_interval)
 
@@ -180,3 +193,18 @@ class Robot(IdealRobot):
             pose[2] += self.theta_noise.rvs()
 
         return pose
+
+    def _bias(self, nu, omega):
+        u"""制御指令にバイアスを与える
+
+        事前に計算してある比率をかけ合わせることで一定のバイアスをかける
+
+        Args:
+            nu(float): 速度[m/s]
+            omega(float): 角速度[rad/s]
+
+        Returns:
+            nu(float): 速度[m/s]
+            omega(float): 角速度[rad/s]
+        """
+        return nu * self.bias_rate_nu, omega * self.bias_rate_omega
