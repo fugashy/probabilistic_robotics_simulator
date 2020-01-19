@@ -6,7 +6,7 @@ u"""さまざまな2D移動ロボットを表現するクラス
 from math import sin, cos, fabs, pi
 import matplotlib.patches as patches
 import numpy as np
-from scipy.stats import expon, norm
+from scipy.stats import expon, norm, uniform
 
 class IdealRobot():
     u"""理想的な2D移動をするロボット"""
@@ -125,7 +125,8 @@ class Robot(IdealRobot):
             color='black',
             noise_per_meter=5., noise_std=pi / 60.,
             bias_rate_stds=(0.1, 0.1),
-            expected_stuck_time=1e100, expected_escape_time=1e-100):
+            expected_stuck_time=1e100, expected_escape_time=1e-100,
+            kidnap_range_x=(-5., -5.), kidnap_range_y=(-5., 5.)):
         u"""初期位置・色・ノイズなどの設定
 
         Args:
@@ -138,6 +139,9 @@ class Robot(IdealRobot):
             bias_rate_stds((float, float)): 速度指令・角速度指令に与えるバイアスの標準偏差
             expected_stuck_time(float): スタックが起きるまでの時間の期待値
             expected_escape_time(float): スタックから抜け出すまでの時間の期待値
+            expected_kidnap_time(float): 誘拐が発生するまでの時間の期待値
+            kidnap_range_x((float, float)): 誘拐後のロボット位置x範囲
+            kidnap_range_y((float, float)): 誘拐後のロボット位置y範囲
         """
         super().__init__(pose, agent, sensor, color)
 
@@ -159,11 +163,21 @@ class Robot(IdealRobot):
         self.bias_rate_omega = norm.rvs(loc=1.0, scale=bias_rate_stds[1])
 
         # スタック(なにかに引っかかって動かなくなる現象)をシミュレートするための変数
+        # 発生するまでの時間，抜け出すまでの時間はともに指数分布の確率変数
         self.stuck_pdf = expon(scale=expected_stuck_time)
         self.escape_pdf = expon(scale=expected_escape_time)
         self.time_until_stuck = self.stuck_pdf.rvs()
         self.time_until_escape = self.escape_pdf.rvs()
         self._stucking = False
+
+        # キッドナップをシミュレートするための変数
+        # 発生するまでの時間は指数分布の確率変数
+        # 融解後の位置姿勢は指定されたレンジの一様分布の確率変数
+        self.kidnap_pdf = expon(scale=expected_kidnap_time)
+        self.time_until_kidnap = self.kidnap_pdf.rvs()
+        rx, ry = kidnap_range_x, kidnap_range_y
+        self.kidnap_dist = uniform(
+            loc=(rx[0], ry[0], 0.), scale=(rx[1]-rx[0], ry[1]-ry[0], 2.*pi))
 
     def one_step(self, time_interval):
         u"""一コマすすめる
@@ -184,6 +198,7 @@ class Robot(IdealRobot):
 
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
         self.pose = self._noise(self.pose, nu, omega, time_interval)
+        self.pose = self._kidnap(pose, time_interval)
 
     def _noise(self, pose, nu, omega, time_interval):
         u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える
@@ -245,3 +260,21 @@ class Robot(IdealRobot):
 
         # pythonでは数値演算にbooleanを使うと1 or 0になる
         return nu * (not self._stucking), omega * (not self._stucking)
+
+    def _kidnap(self, pose, time_interval):
+        u"""キッドナップを発生させる
+
+        Args:
+            pose(np.array): x, y, yaw
+
+        Returns:
+            誘拐後の位置姿勢
+            何もなければそのまま
+            pose(np.array): x, y, yaw
+        """
+        self.time_until_kidnap -= time_interval
+        if self.time_until_kidnap <= 0.:
+            self.time_until_kidnap += self.kidnap_pdf.rvs()
+            return np.array(self.kidnap_dist.rvs()).T
+        else:
+            return pose
