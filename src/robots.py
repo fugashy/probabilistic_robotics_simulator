@@ -126,7 +126,7 @@ class Robot(IdealRobot):
             noise_per_meter=5., noise_std=pi / 60.,
             bias_rate_stds=(0.1, 0.1),
             expected_stuck_time=1e100, expected_escape_time=1e-100,
-            kidnap_range_x=(-5., -5.), kidnap_range_y=(-5., 5.)):
+            expected_kidnap_time=1e100, kidnap_range_x=(-5., -5.), kidnap_range_y=(-5., 5.)):
         u"""初期位置・色・ノイズなどの設定
 
         Args:
@@ -198,7 +198,7 @@ class Robot(IdealRobot):
 
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
         self.pose = self._noise(self.pose, nu, omega, time_interval)
-        self.pose = self._kidnap(pose, time_interval)
+        self.pose = self._kidnap(self.pose, time_interval)
 
     def _noise(self, pose, nu, omega, time_interval):
         u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える
