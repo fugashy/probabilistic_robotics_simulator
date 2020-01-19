@@ -3,9 +3,10 @@ u"""さまざまな2D移動ロボットを表現するクラス
 
 ノイズ無し・ありなど
 """
-from math import sin, cos, fabs
+from math import sin, cos, fabs, pi
 import matplotlib.patches as patches
 import numpy as np
+from scipy.stats import expon, norm
 
 class IdealRobot():
     u"""理想的な2D移動をするロボット"""
@@ -112,3 +113,52 @@ class IdealRobot():
 
         nu, omega = self.agent.decision(obs)
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
+
+
+class Robot(IdealRobot):
+    u"""いろんなノイズも含まれた，リアルに近めなロボット
+
+    移動に対する雑音などを含む
+    """
+
+    def __init__(self, pose, agent=None, sensor=None,
+            color='black', noise_per_meter=5., noise_std=pi / 60.):
+        u"""初期位置・色・ノイズなどの設定
+
+        Args:
+            pose(np.array): [x(m), y(m), yaw(rad)]
+            agent(Agent): エージェント
+            sensor(IdealCamera): 観測者
+            color(string): red, green, blue, black, etc...
+            noise_per_meter(float): 1mあたりに付加されるノイズ
+            noise_std(float): ノイズの標準偏差
+        """
+        super().__init__(pose, agent, sensor, color)
+
+        # 移動に対して発生するノイズ
+        # 移動すればするほどノイズが大きくなっていく，指数分布に従う確率密度関数
+        # exponは指数分布の機能を提供するメソッド
+        self.noise_pdf = expon(scale=1./(1e-100 + noise_per_meter))
+        self.distance_until_noise = self.noise_pdf.rvs()
+        self.theta_noise = norm(scale=noise_std)
+
+    def noise(self, pose, nu, imega, time_interval):
+        u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える"""
+        self.distance_until_noise -= fabs(nu) * time_interval + self.r * fabs(omega) * time_interval
+        if self.distance_until_noise <= 0.:
+            self.distance_until_noise += self.noise_pdf.rvs()
+            pose[2] += self.theta_noise.rvs()
+        return pose
+
+    def one_step(self, time_interval):
+        if self.agent is None:
+            return
+
+        obs = None
+        if self.sensor is not None:
+            obs = self.sensor.data(self.pose)
+
+        nu, omega = self.agetn.decision(obs)
+        self.pose = self.state_transition(nu, omega, time_interval, self.pose)
+        self.pose = self.noise(self.pose, nu, omega, time_interval)
+
