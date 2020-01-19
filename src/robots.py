@@ -145,6 +145,11 @@ class Robot(IdealRobot):
         self.theta_noise = norm(scale=noise_std)
 
     def one_step(self, time_interval):
+        u"""一コマすすめる
+
+        Args:
+            time_interval(float): シミュレート時間間隔[s]
+        """
         if self.agent is None:
             return
 
