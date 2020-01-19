@@ -152,14 +152,22 @@ class Robot(IdealRobot):
         if self.sensor is not None:
             obs = self.sensor.data(self.pose)
 
-        nu, omega = self.agetn.decision(obs)
+        nu, omega = self.agent.decision(obs)
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
         self.pose = self._noise(self.pose, nu, omega, time_interval)
 
-    def _noise(self, pose, nu, imega, time_interval):
-        u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える"""
+    def _noise(self, pose, nu, omega, time_interval):
+        u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える
+
+        Args:
+            pose(np.array): x, y, yaw
+            nu(float): 速度[m/s]
+            omega(float): 角速度[rad/s]
+            time_interval(float): シミュレート時間間隔[s]
+        """
+        # ドローしておいた指数分布から得られるノイズ源接触までの距離を
         self.distance_until_noise -= \
-            fabs(nu) * time_interval + self.r * fabs(omega) * time_interval
+            abs(nu) * time_interval + self.r * abs(omega) * time_interval
         if self.distance_until_noise <= 0.:
             # 再度ドロー
             self.distance_until_noise += self.noise_pdf.rvs()
@@ -167,4 +175,3 @@ class Robot(IdealRobot):
             pose[2] += self.theta_noise.rvs()
 
         return pose
-
