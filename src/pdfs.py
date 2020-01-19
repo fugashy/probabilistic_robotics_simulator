@@ -7,7 +7,7 @@ u"""確率密度関数群
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import expon, norm
+from scipy.stats import expon, norm, uniform
 
 
 class PdfPlotter():
@@ -27,6 +27,23 @@ class ExponPdfPlotter(PdfPlotter):
     def __init__(self, scale):
         super().__init__('expon')
         self._pdf = expon(scale=scale)
+
+    def plot(self, xs):
+        ys = [self._pdf.pdf(x) for x in xs]
+
+        self._ax.set_xlim(min(xs), max(xs) + max(xs) * 0.1)
+        self._ax.set_ylim(0., max(ys) + max(ys) * 0.1)
+
+        self._ax.scatter(
+            xs, ys, s=100, marker='.', color='blue')
+
+        plt.show()
+
+
+class UniformPdfPlotter(PdfPlotter):
+    def __init__(self, loc, scale):
+        super().__init__('uniform')
+        self._pdf = uniform(loc=loc, scale=scale)
 
     def plot(self, xs):
         ys = [self._pdf.pdf(x) for x in xs]
