@@ -97,16 +97,17 @@ class Camera(IdealCamera):
     def __init__(self,
             env_map,
             distance_range=(0.5, 6.0), direction_range=(-pi / 3., pi / 3),
-            distance_noise_rate=0.1, direction_noise_rate=pi/90.):
+            distance_noise_rate=0.1, direction_noise=pi/90.,
+            distance_bias_rate_stddev=0.1, direction_bias_stddev=pi/90.):
         super().__init__(env_map, distance_range, direction_range)
 
+        # 観測結果に直接与えるノイズ係数
         self.distance_noise_rate = distance_noise_rate
-        self.direction_noise_rate = direction_noise_rate
+        self.direction_noise = direction_noise
 
-    def _noise(self, relpos):
-        ell = norm.rvs(loc=relpos[0], scale=relpos[0] * self.distance_noise_rate)
-        phi = norm.rvs(loc=relpos[1], scale=self.direction_noise_rate)
-        return np.array([ell, phi]).T
+        # 観測結果に与えるバイアス
+        self.distance_bias_std = norm.rvs(scale=distance_bias_rate_stddev)
+        self.direction_bias = norm.rvs(scale=direction_bias_stddev)
 
     def data(self, cam_pose):
         u"""与えられた姿勢からのランドマークの観測結果を返す
@@ -122,8 +123,18 @@ class Camera(IdealCamera):
             z = self.observation_function(cam_pose, lm.pos)
             if self._visible(z):
                 z = self._noise(z)
+                z = self._bias(z)
                 observed.append((z, lm.id))
 
         self.lastdata = observed
 
         return self.lastdata
+
+    def _noise(self, relpos):
+        ell = norm.rvs(loc=relpos[0], scale=relpos[0] * self.distance_noise_rate)
+        phi = norm.rvs(loc=relpos[1], scale=self.direction_noise)
+        return np.array([ell, phi]).T
+
+    def _bias(self, relpos):
+        return relpos + np.array(
+            [relpos[0] * self.distance_bias_std, self.direction_bias]).T
