@@ -130,25 +130,19 @@ class Robot(IdealRobot):
             agent(Agent): エージェント
             sensor(IdealCamera): 観測者
             color(string): red, green, blue, black, etc...
-            noise_per_meter(float): 1mあたりに付加されるノイズ
-            noise_std(float): ノイズの標準偏差
+            noise_per_meter(float): 1mあたりになにか踏んでしまう回数
+            noise_std(float): 踏んだときに姿勢に与えるノイズの標準偏差
         """
         super().__init__(pose, agent, sensor, color)
 
         # 移動に対して発生するノイズ
         # 移動すればするほどノイズが大きくなっていく，指数分布に従う確率密度関数
         # exponは指数分布の機能を提供するメソッド
+        # 1e-100で0割対策
         self.noise_pdf = expon(scale=1./(1e-100 + noise_per_meter))
+        # rvsはドローするための関数
         self.distance_until_noise = self.noise_pdf.rvs()
         self.theta_noise = norm(scale=noise_std)
-
-    def noise(self, pose, nu, imega, time_interval):
-        u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える"""
-        self.distance_until_noise -= fabs(nu) * time_interval + self.r * fabs(omega) * time_interval
-        if self.distance_until_noise <= 0.:
-            self.distance_until_noise += self.noise_pdf.rvs()
-            pose[2] += self.theta_noise.rvs()
-        return pose
 
     def one_step(self, time_interval):
         if self.agent is None:
@@ -160,5 +154,17 @@ class Robot(IdealRobot):
 
         nu, omega = self.agetn.decision(obs)
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
-        self.pose = self.noise(self.pose, nu, omega, time_interval)
+        self.pose = self._noise(self.pose, nu, omega, time_interval)
+
+    def _noise(self, pose, nu, imega, time_interval):
+        u"""ノイズを付加すべき距離を移動したら，確率密度関数に従ったノイズを与える"""
+        self.distance_until_noise -= \
+            fabs(nu) * time_interval + self.r * fabs(omega) * time_interval
+        if self.distance_until_noise <= 0.:
+            # 再度ドロー
+            self.distance_until_noise += self.noise_pdf.rvs()
+            # ノイズを姿勢に与える
+            pose[2] += self.theta_noise.rvs()
+
+        return pose
 
