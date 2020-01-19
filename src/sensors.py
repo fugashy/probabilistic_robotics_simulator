@@ -98,7 +98,10 @@ class Camera(IdealCamera):
             env_map,
             distance_range=(0.5, 6.0), direction_range=(-pi / 3., pi / 3),
             distance_noise_rate=0.1, direction_noise=pi/90.,
-            distance_bias_rate_stddev=0.1, direction_bias_stddev=pi/90.):
+            distance_bias_rate_stddev=0.1, direction_bias_stddev=pi/90.,
+            phantom_prob=0.0, phantom_range_x=(-5., 5.), phantom_range_y=(-5., 5.),
+            oversight_prob=0.1,
+            occulusion_prob=0.0):
         super().__init__(env_map, distance_range, direction_range)
 
         # 観測結果に直接与えるノイズ係数
@@ -108,6 +111,20 @@ class Camera(IdealCamera):
         # 観測結果に与えるバイアス
         self.distance_bias_std = norm.rvs(scale=distance_bias_rate_stddev)
         self.direction_bias = norm.rvs(scale=direction_bias_stddev)
+
+        # ファントムのシミュレーション
+        rx, ry = phantom_range_x, phantom_range_y
+        self.phantom_dist = uniform(
+            loc=(rx[0], ry[0]), scale=(rx[1] - rx[0], ry[1] - ry[0]))
+        self.phantom_prob = phantom_prob
+
+        # 見落とし
+        self.oversight_prob = oversight_prob
+
+        # オクルージョン
+        # 一定確率でセンサ値を大きくすることにする
+        self.occulusion_prob = occulusion_prob
+
 
     def data(self, cam_pose):
         u"""与えられた姿勢からのランドマークの観測結果を返す
@@ -121,6 +138,8 @@ class Camera(IdealCamera):
         observed = []
         for lm in self.map.landmarks:
             z = self.observation_function(cam_pose, lm.pos)
+            z = self._phantom(cam_pose, z)
+            z = self._oversight(z)
             if self._visible(z):
                 z = self._noise(z)
                 z = self._bias(z)
@@ -138,3 +157,25 @@ class Camera(IdealCamera):
     def _bias(self, relpos):
         return relpos + np.array(
             [relpos[0] * self.distance_bias_std, self.direction_bias]).T
+
+    def _phantom(self, cam_pose, relpos):
+        # 0 ~ 1の間の一様分布からドローしてしきい値処理
+        if uniform.rvs() < self.phantom_prob:
+            pos = np.array(self.phantom_dist.rvs()).T
+            return self.observation_function(cam_pose, pos)
+        else:
+            return relpos
+
+    def _oversight(self, relpos):
+        if uniform.rvs() < self.oversight_prob:
+            return None
+        else:
+            return relpos
+
+    def _occulusion(self, relpos):
+        u"""乱数がしきい値を下回ったとき現在のセンサー値に雑音を足す"""
+        if uniform.rvs() < self.occulusion_prob:
+            ell = relpos[0] + uniform.rvs() * (self.distance_range[1] - relpos[0])
+            return np.array([ell, relpos[1]]).T
+        else:
+            return relpos
