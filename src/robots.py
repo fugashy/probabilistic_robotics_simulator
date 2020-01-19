@@ -180,7 +180,7 @@ class Robot(IdealRobot):
 
         nu, omega = self.agent.decision(obs)
         nu, omega = self._bias(nu, omega)
-        nu, omega = self._stuck(nu, omega)
+        nu, omega = self._stuck(nu, omega, time_interval)
 
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
         self.pose = self._noise(self.pose, nu, omega, time_interval)
@@ -220,7 +220,7 @@ class Robot(IdealRobot):
         """
         return nu * self.bias_rate_nu, omega * self.bias_rate_omega
 
-    def _stuck(self, nu, omega, time_until_stuck):
+    def _stuck(self, nu, omega, time_interval):
         u"""スタック状態の切り替え
 
         Args:
