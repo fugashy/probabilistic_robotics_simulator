@@ -50,7 +50,7 @@ class World(object):
         elems = []
 
         if self.debuggable:
-            for i in range(1000):
+            for i in range(int(self.time_span/self.time_interval)):
                 self.one_step(i, elems, ax)
         else:
             self.ani = anm.FuncAnimation(
