@@ -36,3 +36,12 @@ class Agent():
             omega(float): 角速度[rad/s]
         """
         return self.nu, self.omega
+
+
+class EstimationAgent(Agent):
+    def __init__(self, nu, omega, estimator):
+        super().__init__(nu, omega)
+        self.estimator = estimator
+
+    def draw(self, ax, elems):
+        self.estimator.draw(ax, elems)
