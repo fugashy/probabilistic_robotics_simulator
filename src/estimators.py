@@ -36,7 +36,10 @@ class Mcl():
         self.motion_noise_rate_pdf = multivariate_normal(cov=c)
 
     def motion_update(self, nu, omega, time):
-        print(self.motion_noise_rate_pdf.cov)
+        u"""パーティクルを動かす"""
+        for p in self.particles:
+            p.motion_update(nu, omega, time, self.motion_noise_rate_pdf)
+
 
     def draw(self, ax, elems):
         u"""パーティクルを矢印として表示
