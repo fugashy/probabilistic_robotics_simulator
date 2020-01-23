@@ -39,9 +39,10 @@ class Agent():
 
 
 class EstimationAgent(Agent):
-    def __init__(self, nu, omega, estimator):
+    def __init__(self, time_interval, nu, omega, estimator):
         super().__init__(nu, omega)
         self.estimator = estimator
+        self.time_interval = time_interval
 
     def draw(self, ax, elems):
         self.estimator.draw(ax, elems)
