@@ -44,5 +44,16 @@ class EstimationAgent(Agent):
         self.estimator = estimator
         self.time_interval = time_interval
 
+        self.prev_nu = 0.0
+        self.prev_omega = 0.0
+
     def draw(self, ax, elems):
         self.estimator.draw(ax, elems)
+
+    def decision(self, observation=None):
+        self.estimator.motion_update(
+            self.prev_nu, self.prev_omega, self.time_interval)
+
+        self.prev_nu, self.prev_omega = self.nu, self.omega
+
+        return self.nu, self.omega
