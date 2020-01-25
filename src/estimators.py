@@ -10,7 +10,7 @@ from src import particles
 
 
 class Mcl():
-    def __init__(self, init_pose, num, motion_noise_stds):
+    def __init__(self, init_pose, num, motion_noise_stds={'nn': 0.19, 'no': 0.001, 'on': 0.13, 'oo': 0.2}):
         u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
 
         Args:
