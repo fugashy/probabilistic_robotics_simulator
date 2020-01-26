@@ -56,4 +56,6 @@ class EstimationAgent(Agent):
 
         self.prev_nu, self.prev_omega = self.nu, self.omega
 
+        self.estimator.observation_update(observation)
+
         return self.nu, self.omega

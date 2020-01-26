@@ -1,12 +1,31 @@
 # -*- coding: utf-8 -*-
 from sys import path
 path.append('../')
-from math import cos, sin, pi
+from math import cos, sin, pi, sqrt
 
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from src import particles
+import robots
+
+class Particle():
+    def __init__(self, init_pose):
+        self.pose = init_pose
+
+    def motion_update(self, nu, omega, time, noise_rate_pdf):
+        # nn, no, on, ooの順にドローされる
+        v_nn, v_no, v_on, v_oo = noise_rate_pdf.rvs()
+
+        noised_nu = \
+            nu + v_nn * sqrt(abs(nu) / time) + v_no * sqrt(abs(omega) / time)
+        noised_omega = \
+            omega + v_on * sqrt(abs(nu) / time) + v_oo * sqrt(abs(omega) / time)
+
+        self.pose = robots.IdealRobot.state_transition(
+            noised_nu, noised_omega, time, self.pose)
+
+    def observation_update(self, observation):
+        print(observation)
 
 
 class Mcl():
@@ -20,7 +39,7 @@ class Mcl():
         """
         self.particles = \
             [
-                particles.Particle(init_pose)
+                Particle(init_pose)
                 for i in range(num)
             ]
 
@@ -54,3 +73,7 @@ class Mcl():
         vys = [sin(p.pose[2]) for p in self.particles]
         elems.append(ax.quiver(xs, ys, vxs, vys, \
                 angles='xy', scale_units='xy', scale=1.5, color='blue', alpha=0.5))
+
+    def observation_update(self, observation):
+        for p in self.particles:
+            p.observation_update(observation)
