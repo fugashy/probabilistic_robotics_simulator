@@ -9,8 +9,11 @@ from scipy.stats import multivariate_normal
 import robots
 
 class Particle():
-    def __init__(self, init_pose):
+    def __init__(self, init_pose, weight):
         self.pose = init_pose
+        # 重み
+        # これと尤度をかける
+        self.weight = weight
 
     def motion_update(self, nu, omega, time, noise_rate_pdf):
         # nn, no, on, ooの順にドローされる
@@ -37,9 +40,12 @@ class Mcl():
             num(int): パーティクルの数
             motion_noise_stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
         """
+        # 初期の重みは等価値
+        # 総和が1になればスケールは変わらない
+        initial_weight = 1. / weight
         self.particles = \
             [
-                Particle(init_pose)
+                Particle(init_pose, initial_weight)
                 for i in range(num)
             ]
 
