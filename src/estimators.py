@@ -103,6 +103,11 @@ class Mcl():
         self.distance_dev_rate = distance_dev_rate
         self.direction_dev = direction_dev
 
+        # 尤度が最大のパーティクルを代表値とする
+        # 初期では適当に先頭
+        self.ml = self.particles[0]
+        self.pose = self.ml.pose
+
     def motion_update(self, nu, omega, time):
         u"""パーティクルを動かす"""
         for p in self.particles:
@@ -139,6 +144,8 @@ class Mcl():
                 self.map,
                 self.distance_dev_rate,
                 self.direction_dev)
+        # リサンプリング後は重みが均一になるので，観測後に最大尤度の姿勢は保持する
+        self.set_ml()
         self.resampling()
 
     def resampling(self):
@@ -169,3 +176,8 @@ class Mcl():
         for p in self.particles:
             p.weight = 1.0 / len(self.particles)
 
+    def set_ml(self):
+        u"""最大尤度のパーティクルを推定機としての出力する姿勢とする"""
+        i = np.argmax([p.weight for p in self.particles])
+        self.ml = self.particles[i]
+        self.pose = self.ml.pose

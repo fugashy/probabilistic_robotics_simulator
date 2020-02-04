@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import math
 u"""エージェントクラス
 
 考える主体のこと
@@ -49,6 +50,9 @@ class EstimationAgent(Agent):
 
     def draw(self, ax, elems):
         self.estimator.draw(ax, elems)
+        x, y, t = self.estimator.pose
+        s = '({:.2f}, {:.2f}, {})'.format(x, y, int(t*180/math.pi)%360)
+        elems.append(ax.text(x, y+0.1, s, fontsize=8))
 
     def decision(self, observation=None):
         self.estimator.motion_update(
