@@ -108,6 +108,6 @@ class BayesianFilter():
             indices.append(y)
         p_y_x = pd.DataFrame(p_y_x).fillna(0.0)
         p_y_x.index = indices
-        # p(x|y)p(y)/p(y)
+        # p(x|y)p(y)/p(x)
         p_y_x = p_y_x / p_y_x.sum()
         return p_y_x[0]
