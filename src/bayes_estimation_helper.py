@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import pandas as pd
 
 
@@ -69,9 +68,46 @@ class SensorValueAndTimeWithBayes():
     def joint_z_t(self):
         return self._joint_z_t
 
-
     def cond_z_t(self):
         return self._joint_z_t / self.marginalize_in('t')
 
     def cond_t_z(self):
         return self._joint_z_t.transpose() / self.marginalize_in('z')
+
+
+class BayesianFilter():
+    u"""ベイズフィルタ
+
+    p(y|x) = p(x|y)p(y) / p(x)
+    """
+    def __init__(self, cond_x_y):
+        u"""学習した，原因を固定したときの観測値の条件付き確率を登録する
+
+        Args:
+            cond_x_y(pandas.DataFrame): 条件付き確率
+        """
+        self._cond_x_y = cond_x_y
+
+    def update(self, x, p_y):
+        u"""観測値と現在の原因分布から，より確かな原因分布へ更新する
+
+        Args:
+            x(float): 観測値
+            p_y(pd.DataFrame): 原因の分布
+        """
+        if p_y.shape[0] != self._cond_x_y.shape[1]:
+            raise IndexError(
+                'col of p_y({0}) should be the same as col of cond_x_y({1})'.format(
+                    p_y.shape[0], self._cond_x_y.shape[1]))
+
+        p_y_x = []
+        indices = []
+        for y in list(p_y.index):
+            # p(x|y)p(y)
+            p_y_x.append(self._cond_x_y[y][x] * p_y[y])
+            indices.append(y)
+        p_y_x = pd.DataFrame(p_y_x).fillna(0.0)
+        p_y_x.index = indices
+        # p(x|y)p(y)/p(y)
+        p_y_x = p_y_x / p_y_x.sum()
+        return p_y_x[0]
