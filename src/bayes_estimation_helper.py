@@ -100,14 +100,18 @@ class BayesianFilter():
                 'col of p_y({0}) should be the same as col of cond_x_y({1})'.format(
                     p_y.shape[0], self._cond_x_y.shape[1]))
 
-        p_y_x = []
+        # p(x|y)p(y)
+        joint_x_y_and_y = []
         indices = []
         for y in list(p_y.index):
-            # p(x|y)p(y)
-            p_y_x.append(self._cond_x_y[y][x] * p_y[y])
+            joint_x_y_and_y.append(self._cond_x_y[y][x] * p_y[y])
             indices.append(y)
-        p_y_x = pd.DataFrame(p_y_x).fillna(0.0)
-        p_y_x.index = indices
+        joint_x_y_and_y = pd.DataFrame(joint_x_y_and_y).fillna(0.0)
+        joint_x_y_and_y.index = indices
+
+        # p(x)
+        p_x = joint_x_y_and_y.sum()
+
         # p(x|y)p(y)/p(x)
-        p_y_x = p_y_x / p_y_x.sum()
-        return p_y_x[0]
+        cond_y_x = joint_x_y_and_y / p_x
+        return cond_y_x[0]
