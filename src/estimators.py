@@ -249,6 +249,7 @@ class ExtendedKalmanFilter():
             elems([matplotlib.XXX]): 描画可能なオブジェクト(Text, PathCollectionなど)
         """
         # xyの3シグマ楕円
+        # スライシング[0:2]でxyのみ抽出
         e = sigma_ellipse(self.belief.mean[0:2], self.belief.cov[0:2, 0:2], 3)
         elems.append(ax.add_patch(e))
 
