@@ -16,9 +16,9 @@ def sigma_ellipse(p, cov, n):
     u"""共分散行列の楕円描画オブジェクトを返す
 
     Args:
-        p(???):
+        p(list): 描画基準位置
         cov(np.ndarray): 共分散行列
-        n(???):
+        n(float): スケール?
 
     Returns:
         matplotlib.patches.Ellipse: 誤差楕円
@@ -28,6 +28,69 @@ def sigma_ellipse(p, cov, n):
     return Ellipse(
         p, width=2*n*sqrt(eigen_values[0]), height=2*n*sqrt(eigen_values[1]),
         angle=angle, fill=False, color='blue', alpha=0.5)
+
+def matM(nu, omega, time, stds):
+    u"""nu, omega空間の共分散行列を計算する
+
+    弓状になったりする分布をガウス分布で近似したもの
+
+    Args:
+        nu(float): 速度[m/s]
+        omega(float): 角速度[rad/s]
+        time(float): 前回からの経過時間[sec]
+        stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
+
+    Returns:
+        共分散行列M_{t}
+    """
+    return np.diag(
+        [
+            stds['nn']**2. * abs(nu) / time + stds['no']**2. * abs(omega) / time,
+            stds['on']**2. * abs(nu) / time + stds['oo']**2. * abs(omega) / time
+        ])
+
+def matA(nu, omega, time, theta):
+    u"""テイラー展開したときの1次の項に登場する係数行列を計算する
+    Args:
+        nu(float): 速度[m/s]
+        omega(float): 角速度[rad/s]
+        time(float): 前回からの経過時間[sec]
+        theta(float): 角度
+
+    Returns:
+        係数行列A_{t}
+    """
+    st = sin(theta)
+    ct = cos(theta)
+
+    stw = sin(theta + omega * time)
+    ctw = cos(theta + omega * time)
+
+    return np.array(
+        [
+            [(stw - st) / omega, -nu / (omega**2) * (stw - st) + nu / omega * time * ctw],
+            [(-ctw + ct) / omega, -nu / (omega**2) * (-ctw + ct) + nu / omega * time * stw],
+            [0., time]
+        ])
+
+def matF(nu, omega, time, theta):
+    u"""状態方程式fを\mu_{t-1}周りでx_{t-1}で偏微分したときのヤコビ行列を計算する
+    Args:
+        nu(float): 速度[m/s]
+        omega(float): 角速度[rad/s]
+        time(float): 前回からの経過時間[sec]
+        theta(float): 角度
+
+    Returns:
+        ヤコビ行列F_{t}
+    """
+    F = np.diag([1., 1., 1.])
+
+    F[0, 2] = nu / omega * (cos(theta + omega * time) - cos(theta))
+    F[1, 2] = nu / omega * (sin(theta + omega * time) - sin(theta))
+
+    return F
+
 
 
 class Particle():
@@ -219,8 +282,8 @@ class ExtendedKalmanFilter():
         """
         # 信念分布を表す正規分布
         self.belief = multivariate_normal(
-            mean=np.array([0., 0., pi/4.]),
-            cov=np.diag([0.1, 0.2, 0.01]))
+            mean=np.array([0., 0., 0.]), cov=np.diag([1e-10, 1e-10, 1e-10]))
+        self.motion_noise_stds = motion_noise_stds
         # [x, y, theta]の3次元
         self.pose = self.belief.mean
 
@@ -228,11 +291,24 @@ class ExtendedKalmanFilter():
         u"""位置更新
 
         Args:
-            nu(???): 速度
-            omega(???): 角速度
+            nu(float): 速度
+            omega(float): 角速度
             time(float): 前回から経過した時間(sec)
         """
-        pass
+        # 0割回避
+        if abs(omega) < 1e-5:
+            omega = 1e-5
+
+        theta = self.belief.mean[2]
+
+        M = matM(nu, omega, time, self.motion_noise_stds)
+        A = matA(nu, omega, time, theta)
+        F = matF(nu, omega, time, theta)
+
+        self.belief.cov = F @ self.belief.cov @ F.T + A @ M @ A.T
+        self.belief.mean = robots.IdealRobot.state_transition(nu, omega, time, self.belief.mean)
+        self.pose = self.belief.mean
+
 
     def observation_update(self, observation):
         u"""観測結果から位置を更新する
