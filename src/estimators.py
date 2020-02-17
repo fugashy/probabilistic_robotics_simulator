@@ -91,6 +91,20 @@ def matF(nu, omega, time, theta):
 
     return F
 
+def matH(pose, landmark_pos):
+    mx, my = landmark_pos
+    mux, muy, mut = pose
+
+    q = (mux - mx)**2 + (muy - my)**2
+
+    return np.array(
+        [
+            [(mux - mx) / np.sqrt(q), (muy - my) / np.sqrt(q), 0.0],
+            [(my - muy) / q, (mux - mx) / q, -1.0]
+        ])
+
+def matQ(distance_dev, direction_dev):
+    return np.diag(np.array([distance_dev**2, direction_dev**2]))
 
 
 class Particle():
@@ -272,20 +286,27 @@ class ExtendedKalmanFilter():
     def __init__(
             self,
             map_, init_pose,
-            motion_noise_stds={'nn': 0.19, 'no': 0.001, 'on': 0.13, 'oo': 0.2}):
+            motion_noise_stds={'nn': 0.19, 'no': 0.001, 'on': 0.13, 'oo': 0.2},
+            distance_dev_rate=0.14, direction_dev=0.05):
         u"""初期設定
 
         Args:
             map_(maps.Map): 環境地図
             init_pose(np.array): 初期位置
             motion_noise_stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
+            distance_dev_rate(float): 観測した距離に比例するばらつき
+            direction_dev(float): 観測した角度のばらつき
         """
+        self.map = map_
         # 信念分布を表す正規分布
         self.belief = multivariate_normal(
             mean=np.array([0., 0., 0.]), cov=np.diag([1e-10, 1e-10, 1e-10]))
         self.motion_noise_stds = motion_noise_stds
         # [x, y, theta]の3次元
         self.pose = self.belief.mean
+
+        self.distance_dev_rate = distance_dev_rate
+        self.direction_dev = direction_dev
 
     def motion_update(self, nu, omega, time):
         u"""位置更新
@@ -315,7 +336,19 @@ class ExtendedKalmanFilter():
         Args:
             observation((np.array, int)): 観測距離と角度，ID
         """
-        pass
+        for d in observation:
+            z = d[0]
+            obs_id = d[1]
+
+            H = matH(self.belief.mean, self.map.landmarks[obs_id].pos)
+            estimated_z = sensors.IdealCamera.observation_function(
+                self.belief.mean, self.map.landmarks[obs_id].pos)
+            Q = matQ(estimated_z[0] * self.distance_dev_rate, self.direction_dev)
+            K = self.belief.cov @ H.T @ np.linalg.inv(Q + H @ self.belief.cov @ H.T)
+
+            self.belief.mean += K @ (z - estimated_z)
+            self.belief.cov = (np.eye(3) - K @ H) @ self.belief.cov
+            self.pose = self.belief.mean
 
     def draw(self, ax, elems):
         u"""自己位置を誤差楕円で描画
