@@ -3,6 +3,8 @@ u"""ランドマーク"""
 
 import numpy as np
 
+import utilities
+
 
 class Point2DLandmark:
     u"""2Dの点ランドマーク"""
@@ -28,3 +30,21 @@ class Point2DLandmark:
             ax.text(
                 self.pos[0], self.pos[1],
                 'id:' + str(self.id), fontsize=10))
+
+
+class Point2DLandmarkEstimated(Point2DLandmark):
+    def __init__(self):
+        super().__init__(0., 0.)
+        self.cov = np.array([[1., 0.], [0., 2.]])
+
+    def draw(self, ax, elems):
+        if self.cov is None:
+            return
+
+        c = ax.scatter(
+            self.pos[0], self.pos[1], s=100, marker='*', label='landmarks', color='blue')
+        elems.append(c)
+        elems.append(ax.text(self.pos[0], self.pos[1], 'id:' + str(self.id), fontsize=10))
+
+        e = utilities.sigma_ellipse(self.pos, self.cov, 3)
+        elems.append(ax.add_patch(e))

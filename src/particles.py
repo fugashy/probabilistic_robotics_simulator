@@ -4,6 +4,8 @@ from math import sqrt
 import numpy as np
 from scipy.stats import multivariate_normal
 
+import landmarks
+import maps
 import robots
 import sensors
 
@@ -61,3 +63,12 @@ class Particle():
             # そこからどのくらい外れているのか，もしくはあっているのかを得る
             self.weight *= multivariate_normal(
                 mean=particle_suggest_pos, cov=cov).pdf(obs_pos)
+
+
+class MapParticle(Particle):
+    def __init__(self, init_pose, weight, landmark_num):
+        super().__init__(init_pose, weight)
+        self.map = maps.Map()
+
+        for i in range(landmark_num):
+            self.map.append_landmark(landmarks.Point2DLandmarkEstimated())

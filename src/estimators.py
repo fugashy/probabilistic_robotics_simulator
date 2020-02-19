@@ -131,6 +131,37 @@ class Mcl():
         self.pose = self.ml.pose
 
 
+class FastSlam(Mcl):
+    def __init__(self,
+            map_, init_pose, particle_num, landmark_num,
+            motion_noise_stds={'nn': 0.19, 'no': 0.001, 'on': 0.13, 'oo': 0.2},
+            distance_dev_rate=0.14, direction_dev=0.05):
+        u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
+
+        Args:
+            envmap(maps.Map): 環境
+            init_pose(np.array): 初期位置
+            particle_num(int): パーティクルの数
+            landmark_num(int): ランドマークの数
+            motion_noise_stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
+            distance_dev_rate(float): 観測した距離に比例するばらつき
+            direction_dev(float): 観測した角度のばらつき
+        """
+        super().__init__(
+            map_, init_pose, particle_num, motion_noise_stds, distance_dev_rate, direction_dev)
+
+        self.particles = \
+            [
+                particles.MapParticle(init_pose, 1. / particle_num, landmark_num)
+                for i in range(particle_num)
+            ]
+        self.ml = self.particles[0]
+
+    def draw(self, ax, elems):
+        super().draw(ax, elems)
+        self.ml.map.draw(ax, elems)
+
+
 class ExtendedKalmanFilter():
     u"""拡張カルマンフィルタを用いて自己位置を更新するクラス"""
 
