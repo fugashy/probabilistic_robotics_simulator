@@ -11,15 +11,15 @@ import sensors
 import utilities
 
 # 原典のパラメータ
-#   _MOTION_NOISE_STDDEV = {
-#       'nn': 0.19, 'no': 1e-5,
-#       'on': 0.13, 'oo': 0.20
-#   }
-# 自分で推定したパラメータ
 _MOTION_NOISE_STDDEV = {
-    'nn': 0.201, 'no': 1e-5,
-    'on': 0.127, 'oo': 0.227
+    'nn': 0.19, 'no': 1e-5,
+    'on': 0.13, 'oo': 0.20
 }
+# 自分で推定したパラメータ
+#   _MOTION_NOISE_STDDEV = {
+#       'nn': 0.201, 'no': 1e-5,
+#       'on': 0.127, 'oo': 0.227
+#   }
 
 
 class Mcl():

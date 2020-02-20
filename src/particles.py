@@ -84,6 +84,9 @@ class MapParticle(Particle):
             if landmark.cov is None:
                 self._init_landmark_estimation(
                     landmark, z, distance_dev_rate, direction_dev)
+            else:
+                self._observation_update_landmark(
+                    landmark, z, distance_dev_rate, direction_dev)
 
     def _init_landmark_estimation(
             self, landmark, z, distance_dev_rate, direction_dev):
@@ -95,3 +98,23 @@ class MapParticle(Particle):
         Q = utilities.matQ(distance_dev_rate * z[0], direction_dev)
 
         landmark.cov = np.linalg.inv(H.T @ np.linalg.inv(Q) @ H)
+
+    def _observation_update_landmark(
+            self, landmark, z, distance_dev_rate, direction_dev):
+        # ランドマークの推定位置から予想される計測値
+        estimated_z = sensors.IdealCamera.observation_function(
+            self.pose, landmark.pos)
+
+        if estimated_z[0] < 0.01:
+            return
+
+        H = -utilities.matH(self.pose, landmark.pos)[0:2, 0:2]
+        Q = utilities.matQ(distance_dev_rate * estimated_z[0], direction_dev)
+        K = landmark.cov @ H.T @ np.linalg.inv(Q + H @ landmark.cov @ H.T)
+
+        # 重みの更新
+        Q_z = H @ landmark.cov @ H.T + Q
+        self.weight *= multivariate_normal(mean=estimated_z, cov=Q_z).pdf(z)
+
+        landmark.pos = K @ (z - estimated_z) + landmark.pos
+        landmark.cov = (np.eye(2) - K @ H) @ landmark.cov
