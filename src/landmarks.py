@@ -35,7 +35,7 @@ class Point2DLandmark:
 class Point2DLandmarkEstimated(Point2DLandmark):
     def __init__(self):
         super().__init__(0., 0.)
-        self.cov = np.array([[1., 0.], [0., 2.]])
+        self.cov = None
 
     def draw(self, ax, elems):
         if self.cov is None:

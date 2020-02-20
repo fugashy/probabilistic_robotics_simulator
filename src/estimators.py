@@ -144,13 +144,12 @@ class Mcl():
 
 class FastSlam(Mcl):
     def __init__(self,
-            map_, init_pose, particle_num, landmark_num,
+            init_pose, particle_num, landmark_num,
             motion_noise_stds=_MOTION_NOISE_STDDEV,
             distance_dev_rate=0.14, direction_dev=0.05):
         u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
 
         Args:
-            envmap(maps.Map): 環境
             init_pose(np.array): 初期位置
             particle_num(int): パーティクルの数
             landmark_num(int): ランドマークの数
@@ -159,14 +158,24 @@ class FastSlam(Mcl):
             direction_dev(float): 観測した角度のばらつき
         """
         super().__init__(
-            map_, init_pose, particle_num, motion_noise_stds, distance_dev_rate, direction_dev)
+            None, init_pose, particle_num, motion_noise_stds,
+            distance_dev_rate, direction_dev)
 
         self.particles = \
             [
-                particles.MapParticle(init_pose, 1. / particle_num, landmark_num)
+                particles.MapParticle(
+                    init_pose, 1. / particle_num, landmark_num)
                 for i in range(particle_num)
             ]
         self.ml = self.particles[0]
+
+    def observation_update(self, observation):
+        for p in self.particles:
+            p.observation_update(
+                observation, self.distance_dev_rate, self.direction_dev)
+
+        self.set_ml()
+        self.resampling()
 
     def draw(self, ax, elems):
         super().draw(ax, elems)

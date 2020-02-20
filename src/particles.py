@@ -8,6 +8,7 @@ import landmarks
 import maps
 import robots
 import sensors
+import utilities
 
 class Particle():
     def __init__(self, init_pose, weight):
@@ -71,4 +72,26 @@ class MapParticle(Particle):
         self.map = maps.Map()
 
         for i in range(landmark_num):
-            self.map.append_landmark(landmarks.Point2DLandmarkEstimated())
+            self.map.append_landmark(
+                landmarks.Point2DLandmarkEstimated())
+
+    def observation_update(
+            self, observation, distance_dev_rate, direction_dev):
+        for d in observation:
+            z = d[0]
+            landmark = self.map.landmarks[d[1]]
+
+            if landmark.cov is None:
+                self._init_landmark_estimation(
+                    landmark, z, distance_dev_rate, direction_dev)
+
+    def _init_landmark_estimation(
+            self, landmark, z, distance_dev_rate, direction_dev):
+        landmark.pos = z[0] * np.array([
+            np.cos(self.pose[2] + z[1]),
+            np.sin(self.pose[2] + z[1])]).T + self.pose[0:2]
+
+        H = utilities.matH(self.pose, landmark.pos)[0:2, 0:2]
+        Q = utilities.matQ(distance_dev_rate * z[0], direction_dev)
+
+        landmark.cov = np.linalg.inv(H.T @ np.linalg.inv(Q) @ H)
