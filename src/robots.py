@@ -3,12 +3,23 @@ u"""さまざまな2D移動ロボットを表現するクラス
 
 ノイズ無し・ありなど
 """
+from abc import abstractmethod
 from math import sin, cos, fabs, pi
-import matplotlib.patches as patches
 import numpy as np
 from scipy.stats import expon, norm, uniform
 
-class IdealRobot():
+
+class Robot():
+    @abstractmethod
+    def one_step(self, time_interval):
+        u"""1コマすすめる
+
+        Agentが存在する場合は、制御指令を得て位置を更新する
+        """
+        raise NotImplementedError('')
+
+
+class IdealRobot(Robot):
     u"""理想的な2D移動をするロボット"""
 
     @classmethod
@@ -56,6 +67,7 @@ class IdealRobot():
             sensor(IdealCamera): 観測者
             color(string): red, green, blue, black, etc...
         """
+        super().__init__()
         self.pose = pose
         self.r = 0.2
         self.color = color
@@ -64,46 +76,7 @@ class IdealRobot():
         # 軌跡を描画するため
         self.poses = [pose]
 
-    def draw(self, ax, elems):
-        u"""描画
-
-        Args:
-            ax(matplotlib.axes,_subplots.AxesSubplot): サブプロットオブジェクト
-            elems([matplotlib.XXX]): 描画可能なオブジェクト(Text, PathCollectionなど)
-
-        Returns:
-            なし
-        """
-        x, y, theta = self.pose
-
-        # ロボットの向きを示す線分
-        xn = x + self.r * cos(theta)
-        yn = y + self.r * sin(theta)
-        # sx.plotがlistを返すので+=とする not append
-        elems += ax.plot([x, xn], [y, yn], color=self.color)
-
-        c = patches.Circle(
-            xy=(x, y), radius=self.r, fill=False, color=self.color)
-
-        elems.append(ax.add_patch(c))
-
-        self.poses.append(self.pose)
-        elems += ax.plot(
-            [e[0] for e in self.poses],
-            [e[1] for e in self.poses],
-            linewidth=0.5, color=self.color)
-
-        if self.sensor is not None and len(self.poses) > 1:
-            # センサ値を得たときの時刻が-2要素にある...らしい
-            self.sensor.draw(ax, elems, self.poses[-2])
-        if self.agent is not None and hasattr(self.agent, 'draw'):
-            self.agent.draw(ax, elems)
-
     def one_step(self, time_interval):
-        u"""1コマすすめる
-
-        Agentが存在する場合は、制御指令を得て位置を更新する
-        """
         if self.agent is None:
             return
 
@@ -115,7 +88,7 @@ class IdealRobot():
         self.pose = self.state_transition(nu, omega, time_interval, self.pose)
 
 
-class Robot(IdealRobot):
+class RealRobot(IdealRobot):
     u"""いろんなノイズも含まれた，リアルに近めなロボット
 
     移動に対する雑音などを含む
