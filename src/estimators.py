@@ -46,7 +46,6 @@ class Estimator():
         """
         raise NotImplementedError('This is an abstractmethod')
 
-    @property
     def pose(self):
         u"""推定器としてアウトプットする位置姿勢"""
         return self._pose
@@ -55,7 +54,7 @@ class Estimator():
 class Mcl(Estimator):
     def __init__(
             self,
-            map_, init_pose, num,
+            map_, init_pose, particles_,
             motion_noise_stds=_MOTION_NOISE_STDDEV,
             distance_dev_rate=0.14, direction_dev=0.05):
         u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
@@ -63,21 +62,20 @@ class Mcl(Estimator):
         Args:
             envmap(maps.Map): 環境
             init_pose(np.array): 初期位置
-            num(int): パーティクルの数
+            particles_(Particle): パーティクル
             motion_noise_stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
             distance_dev_rate(float): 観測した距離に比例するばらつき
             direction_dev(float): 観測した角度のばらつき
         """
         super().__init__()
+        if type(particles_) is not list:
+            raise TypeError('particles_ is not list')
+        if not isinstance(particles_[0], particles.Particle):
+            raise TypeError(
+                '{} is not a child of Particle'.format(type(particles_)))
+
         self._map = map_
-        # 初期の重みは等価値
-        # 総和が1になればスケールは変わらない
-        initial_weight = 1. / num
-        self._particles = \
-            [
-                particles.SimpleParticle(init_pose, initial_weight)
-                for i in range(num)
-            ]
+        self._particles = particles_
 
         u"""
         4Dのガウス分布オブジェクト
@@ -151,36 +149,30 @@ class Mcl(Estimator):
 
 class FastSlam(Mcl):
     def __init__(self,
-            init_pose, particle_num, landmark_num,
+            init_pose, particles_,
             motion_noise_stds=_MOTION_NOISE_STDDEV,
             distance_dev_rate=0.14, direction_dev=0.05):
         u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
 
         Args:
             init_pose(np.array): 初期位置
-            particle_num(int): パーティクルの数
-            landmark_num(int): ランドマークの数
+            particles_(Particle): パーティクル
+            landmarks_(Point2DLandmark): ランドマーク
             motion_noise_stds(dict): 並進速度，回転速度2x2=4Dの標準偏差
             distance_dev_rate(float): 観測した距離に比例するばらつき
             direction_dev(float): 観測した角度のばらつき
         """
         super().__init__(
-            None, init_pose, particle_num, motion_noise_stds,
+            None, init_pose, particles_, motion_noise_stds,
             distance_dev_rate, direction_dev)
 
-        self._particles = \
-            [
-                particles.MapParticle(
-                    init_pose, 1. / particle_num, landmark_num)
-                for i in range(particle_num)
-            ]
+        self._particles = particles_
         self._ml = self._particles[0]
 
     def observation_update(self, observation):
         for p in self._particles:
             p.observation_update(
                 observation, self._distance_dev_rate, self._direction_dev)
-
         self._set_ml()
         self._resampling()
 

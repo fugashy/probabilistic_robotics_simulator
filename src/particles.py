@@ -14,7 +14,7 @@ import utilities
 # TODO(fugashy) observation_updateがインターフェースが違うので，いつか治す
 
 class Particle():
-    def __init__(self, init_pose, weight):
+    def __init__(self, init_pose=np.array([0., 0., 0.]), weight=np.nan):
         self.pose = init_pose
         # 重み
         # これと尤度をかける
@@ -28,7 +28,7 @@ class Particle():
 class SimpleParticle(Particle):
     u"""教科書どおりのパーティクル"""
 
-    def __init__(self, init_pose, weight):
+    def __init__(self, init_pose=np.array([0., 0., 0.]), weight=np.nan):
         super().__init__(init_pose, weight)
 
     def motion_update(self, nu, omega, time, noise_rate_pdf):
@@ -81,11 +81,10 @@ class SimpleParticle(Particle):
 
 
 class MapParticle(SimpleParticle):
-    def __init__(self, init_pose, weight, landmark_num):
+    def __init__(self, init_pose, weight, map_, landmarks):
         super().__init__(init_pose, weight)
-        self._map = maps.Map()
-
-        for i in range(landmark_num):
+        self._map = map_
+        for landmark in landmarks:
             self._map.append_landmark(
                 landmarks.Point2DLandmarkEstimated())
 

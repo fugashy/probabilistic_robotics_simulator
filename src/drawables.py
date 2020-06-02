@@ -59,8 +59,6 @@ class Simulator(object):
         # Drawableの派生クラスを渡しているはずなのにだめなのかわからない
         if not isinstance(obj, Drawable):
             raise TypeError('{} is not drawable object'.format(type(obj)))
-#       if not hasattr(obj, 'draw'):
-#           raise TypeError('{} is not drawable object'.format(type(obj)))
         self.objects.append(obj)
 
     def draw(self):
@@ -141,21 +139,21 @@ class DrawableEstimationAgent(EstimationAgent, Drawable):
         EstimationAgent.__init__(self, time_interval, nu, omega, estimator)
 
     def draw(self, ax, elems, **fkwds):
-        self._estimator.draw(ax, elems)
-        x, y, t = self._estimator.pose
+        self._estimator.draw(ax, elems, **fkwds)
+        x, y, t = self._estimator.pose()
         s = '({:.2f}, {:.2f}, {})'.format(x, y, int(t*180/pi)%360)
         elems.append(ax.text(x, y+0.1, s, fontsize=8))
 
 
 class DrawableMcl(Mcl, Drawable):
     def __init__(
-            self, map_, init_pose, num,
+            self, map_, init_pose, particles_,
             motion_noise_stds={
                 'nn': 0.19, 'no': 1e-5,
                 'on': 0.13, 'oo': 0.20},
             distance_dev_rate=0.14, direction_dev=0.05):
         Mcl.__init__(
-                self, map_, init_pose, num, motion_noise_stds,
+                self, map_, init_pose, particles_, motion_noise_stds,
                 distance_dev_rate, direction_dev)
 
     def draw(self, ax, elems, **fkwds):
@@ -357,6 +355,12 @@ class DrawableRealRobot(RealRobot, Drawable):
             [e[0] for e in self.poses],
             [e[1] for e in self.poses],
             linewidth=0.5, color=self.color)
+
+        if self.sensor is not None and len(self.poses) > 1:
+            # センサ値を得たときの時刻が-2要素にある...らしい
+            self.sensor.draw(ax, elems, self.poses[-2])
+        if self.agent is not None and hasattr(self.agent, 'draw'):
+            self.agent.draw(ax, elems)
 
 
 class DrawableIdealCamera(IdealCamera, Drawable):
