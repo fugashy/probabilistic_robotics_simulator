@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from abc import abstractmethod
 from math import sqrt
 
 import numpy as np
@@ -10,12 +11,25 @@ import robots
 import sensors
 import utilities
 
+# TODO(fugashy) observation_updateがインターフェースが違うので，いつか治す
+
 class Particle():
     def __init__(self, init_pose, weight):
         self.pose = init_pose
         # 重み
         # これと尤度をかける
         self.weight = weight
+
+    @abstractmethod
+    def motion_update(self, nu, omega, time, noise_rate_pdf):
+        raise NotImplementedError('')
+
+
+class SimpleParticle(Particle):
+    u"""教科書どおりのパーティクル"""
+
+    def __init__(self, init_pose, weight):
+        super().__init__(init_pose, weight)
 
     def motion_update(self, nu, omega, time, noise_rate_pdf):
         # nn, no, on, ooの順にドローされる
@@ -66,20 +80,20 @@ class Particle():
                 mean=particle_suggest_pos, cov=cov).pdf(obs_pos)
 
 
-class MapParticle(Particle):
+class MapParticle(SimpleParticle):
     def __init__(self, init_pose, weight, landmark_num):
         super().__init__(init_pose, weight)
-        self.map = maps.Map()
+        self._map = maps.Map()
 
         for i in range(landmark_num):
-            self.map.append_landmark(
+            self._map.append_landmark(
                 landmarks.Point2DLandmarkEstimated())
 
     def observation_update(
             self, observation, distance_dev_rate, direction_dev):
         for d in observation:
             z = d[0]
-            landmark = self.map.landmarks[d[1]]
+            landmark = self._map.landmarks[d[1]]
 
             if landmark.cov is None:
                 self._init_landmark_estimation(
