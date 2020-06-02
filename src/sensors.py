@@ -1,12 +1,29 @@
 # -*- coding: utf-8 -*-
-u"""センサー"""
-
+from abc import abstractmethod
 from math import atan2, cos, sin, pi
 import numpy as np
 from scipy.stats import norm, uniform
 
+class Sensor():
+    u"""センサー"""
 
-class IdealCamera():
+    def __init__(self):
+        self._sensor_pose = None
+
+    @abstractmethod
+    def data(self, sensor_pose):
+        u"""与えられた姿勢からのランドマークの観測結果を返す
+
+        Args:
+            cam_pose(np.array): 観測位置姿勢
+
+        Returns:
+            ((np.array, int)): 観測結果とID
+        """
+        raise NotImplementedError('Abstract method of Sensor')
+
+
+class IdealCamera(Sensor):
     u"""理想的な観測をするカメラ
 
     Landmarkを観測し，距離と角度を求める
@@ -18,6 +35,7 @@ class IdealCamera():
             distance_range=(0.5, 6.0),
             direction_range=(-np.pi / 3., np.pi / 3.)):
         u"""マップの登録, 有効範囲の設定"""
+        super().__init__()
         self.map = env_map
         self.distance_range = distance_range
         self.direction_range = direction_range
@@ -25,32 +43,16 @@ class IdealCamera():
         self.lastdata = []
 
     def data(self, cam_pose):
-        u"""与えられた姿勢からのランドマークの観測結果を返す
-
-        Args:
-            cam_pose(np.array): 観測位置姿勢
-
-        Returns:
-            ((np.array, int)): 観測結果とID
-        """
         observed = []
-        for lm in self.map.landmarks:
+        for lm in self.map.landmarks():
             p = self.observation_function(cam_pose, lm.pos)
             if self._visible(p):
                 observed.append((p, lm.id))
 
         self.lastdata = observed
+        self._sensor_pose = cam_pose
 
         return self.lastdata
-
-    def draw(self, ax, elems, cam_pose):
-        x, y, theta = cam_pose
-
-        for lm in self.lastdata:
-            distance, direction = lm[0][0], lm[0][1]
-            lx = x + distance * cos(direction + theta)
-            ly = y + distance * sin(direction + theta)
-            elems += ax.plot([x, lx], [y, ly], color='pink')
 
     @classmethod
     def observation_function(cls, cam_pos, obj_pos):
@@ -127,23 +129,15 @@ class Camera(IdealCamera):
 
 
     def data(self, cam_pose):
-        u"""与えられた姿勢からのランドマークの観測結果を返す
-
-        Args:
-            cam_pose(np.array): 観測位置姿勢
-
-        Returns:
-            ((np.array, int)): 観測結果とID
-        """
         observed = []
-        for lm in self.map.landmarks:
-            z = self.observation_function(cam_pose, lm.pos)
+        for lm in self.map.landmarks():
+            z = self.observation_function(cam_pose, lm.pos())
             z = self._phantom(cam_pose, z)
             z = self._oversight(z)
             if self._visible(z):
                 z = self._noise(z)
                 z = self._bias(z)
-                observed.append((z, lm.id))
+                observed.append((z, lm.get_id()))
 
         self.lastdata = observed
 
