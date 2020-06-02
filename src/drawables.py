@@ -233,20 +233,20 @@ class DrawableExtendedKalmanFilter(ExtendedKalmanFilter, Drawable):
         elems += ax.plot(xs, ys, color='blue', alpha=0.5)
 
 
-class DrawablePoint2DLandMark(Point2DLandmark, Drawable):
+class DrawablePoint2DLandmark(Point2DLandmark, Drawable):
     def __init__(self, x, y):
         Point2DLandmark.__init__(self, x, y)
 
     def draw(self, ax, elems, **fkwds):
         u"""点ランドマークを散布図として描画する"""
         c = ax.scatter(
-            self._pos[0], self._pos[1],
+            self.pos[0], self.pos[1],
             s=100, marker='*', label='landmark', color='orange')
         elems.append(c)
         elems.append(
             ax.text(
-                self._pos[0], self._pos[1],
-                'id:' + str(self._id), fontsize=10))
+                self.pos[0], self.pos[1],
+                'id:' + str(self.id), fontsize=10))
 
 
 class Point2DLandmarkEstimated(Point2DLandmarkEstimated, Drawable):
@@ -258,15 +258,15 @@ class Point2DLandmarkEstimated(Point2DLandmarkEstimated, Drawable):
             return
 
         c = ax.scatter(
-            self._pos[0], self._pos[1],
+            self.pos[0], self.pos[1],
             s=100, marker='*', label='landmarks', color='blue')
         elems.append(c)
         elems.append(
             ax.text(
-                self._pos[0], self._pos[1],
-                'id:' + str(self._id), fontsize=10))
+                self.pos[0], self.pos[1],
+                'id:' + str(self.id), fontsize=10))
 
-        e = utilities.sigma_ellipse(self._pos, self._cov, 3)
+        e = utilities.sigma_ellipse(self.pos, self._cov, 3)
         elems.append(ax.add_patch(e))
 
 
@@ -280,7 +280,7 @@ class DrawableMap(Map, Drawable):
         super().append_landmark(landmark)
 
     def draw(self, ax, elems, **fkwds):
-        for lm in self.landmarks:
+        for lm in self._landmarks:
             lm.draw(ax, elems)
 
 
@@ -358,7 +358,7 @@ class DrawableRealRobot(RealRobot, Drawable):
 
         if self.sensor is not None and len(self.poses) > 1:
             # センサ値を得たときの時刻が-2要素にある...らしい
-            self.sensor.draw(ax, elems, self.poses[-2])
+            self.sensor.draw(ax, elems, cam_pose=self.poses[-2])
         if self.agent is not None and hasattr(self.agent, 'draw'):
             self.agent.draw(ax, elems)
 
@@ -370,13 +370,10 @@ class DrawableIdealCamera(IdealCamera, Drawable):
             direction_range=(-np.pi / 3., np.pi / 3.)):
         if not isinstance(env_map, Drawable):
             raise TypeError('agent is not a child of Drawable')
-        IdealCamera.__init__(env_map, distance_range, direction_range)
+        IdealCamera.__init__(self, env_map, distance_range, direction_range)
 
     def draw(self, ax, elems, **fkwds):
-        if self._sensor_pose is None:
-            return
-
-        x, y, theta = self._sensor_pose
+        x, y, theta = fkwds['cam_pose']
 
         for lm in self.lastdata:
             distance, direction = lm[0][0], lm[0][1]
@@ -397,7 +394,7 @@ class DrawableCamera(Camera, Drawable):
         if not isinstance(env_map, Drawable):
             raise TypeError('agent is not a child of Drawable')
         Camera.__init__(
-            env_map,
+            self, env_map,
             distance_range, direction_range,
             distance_noise_rate, direction_noise,
             distance_bias_rate_stddev, direction_bias_stddev,
@@ -406,10 +403,7 @@ class DrawableCamera(Camera, Drawable):
             occulusion_prob)
 
     def draw(self, ax, elems, **fkwds):
-        if self._sensor_pose is None:
-            return
-
-        x, y, theta = self._sensor_pose
+        x, y, theta = fkwds['cam_pose']
 
         for lm in self.lastdata:
             distance, direction = lm[0][0], lm[0][1]

@@ -7,9 +7,6 @@ from scipy.stats import norm, uniform
 class Sensor():
     u"""センサー"""
 
-    def __init__(self):
-        self._sensor_pose = None
-
     @abstractmethod
     def data(self, sensor_pose):
         u"""与えられた姿勢からのランドマークの観測結果を返す
@@ -50,7 +47,6 @@ class IdealCamera(Sensor):
                 observed.append((p, lm.id))
 
         self.lastdata = observed
-        self._sensor_pose = cam_pose
 
         return self.lastdata
 
@@ -131,13 +127,13 @@ class Camera(IdealCamera):
     def data(self, cam_pose):
         observed = []
         for lm in self.map.landmarks():
-            z = self.observation_function(cam_pose, lm.pos())
+            z = self.observation_function(cam_pose, lm.pos)
             z = self._phantom(cam_pose, z)
             z = self._oversight(z)
             if self._visible(z):
                 z = self._noise(z)
                 z = self._bias(z)
-                observed.append((z, lm.get_id()))
+                observed.append((z, lm.id))
 
         self.lastdata = observed
 

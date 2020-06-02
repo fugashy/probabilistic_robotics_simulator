@@ -10,14 +10,8 @@ class Point2DLandmark():
     u"""2Dの点ランドマーク"""
 
     def __init__(self, x, y):
-        self._pos = np.array([x, y]).T
-        self._id = np.nan
-
-    def pos(self):
-        return self._pos
-
-    def get_id(self):
-        return self._id
+        self.pos = np.array([x, y]).T
+        self.id = np.nan
 
 
 class Point2DLandmarkEstimated(Point2DLandmark):

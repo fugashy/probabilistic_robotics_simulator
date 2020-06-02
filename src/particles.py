@@ -63,7 +63,7 @@ class SimpleParticle(Particle):
                 IDがわかるからやれる芸当
             """
             # ランドマークの位置
-            pos_on_map = map_.landmarks[obs_id].pos
+            pos_on_map = map_.landmarks()[obs_id].pos
             # パーティクルから観測した場合の位置
             particle_suggest_pos = sensors.IdealCamera.observation_function(
                 self.pose, pos_on_map)
@@ -85,8 +85,7 @@ class MapParticle(SimpleParticle):
         super().__init__(init_pose, weight)
         self._map = map_
         for landmark in landmarks:
-            self._map.append_landmark(
-                landmarks.Point2DLandmarkEstimated())
+            self._map.append_landmark(landmarks)
 
     def observation_update(
             self, observation, distance_dev_rate, direction_dev):
