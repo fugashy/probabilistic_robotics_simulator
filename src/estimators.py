@@ -225,9 +225,9 @@ class ExtendedKalmanFilter(Estimator):
             z = d[0]
             obs_id = d[1]
 
-            H = utilities.matH(self._belief.mean, self._map.landmarks[obs_id].pos)
+            H = utilities.matH(self._belief.mean, self._map.landmarks()[obs_id].pos)
             estimated_z = sensors.IdealCamera.observation_function(
-                self._belief.mean, self._map.landmarks[obs_id].pos)
+                self._belief.mean, self._map.landmarks()[obs_id].pos)
             Q = utilities.matQ(estimated_z[0] * self._distance_dev_rate, self._direction_dev)
             K = self._belief.cov @ H.T @ np.linalg.inv(Q + H @ self._belief.cov @ H.T)
 

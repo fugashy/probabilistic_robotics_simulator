@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from abc import abstractmethod
-from math import cos, pi, sin
+from math import cos, pi, sin, sqrt
 from matplotlib import (
     pyplot as plt,
     animation as anm,
@@ -216,7 +216,7 @@ class DrawableExtendedKalmanFilter(ExtendedKalmanFilter, Drawable):
                 'on': 0.13, 'oo': 0.20},
             distance_dev_rate=0.14, direction_dev=0.05):
         ExtendedKalmanFilter.__init__(
-            map_, init_pose,
+            self, map_, init_pose,
             motion_noise_stds, distance_dev_rate, direction_dev)
 
     def draw(self, ax, elems, **fkwds):
