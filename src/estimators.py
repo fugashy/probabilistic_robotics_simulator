@@ -56,7 +56,7 @@ class Mcl(Estimator):
             self,
             map_, init_pose, particles_,
             motion_noise_stds=_MOTION_NOISE_STDDEV,
-            distance_dev_rate=0.14, direction_dev=0.05):
+            distance_dev_rate=0.076, direction_dev=0.026):
         u"""パーティクルを使ってロボットの確からしい位置を推定するクラス
 
         Args:
