@@ -36,6 +36,7 @@ from sensors import (
     IdealCamera,
     Camera,
 )
+import utilities
 
 class Simulator(object):
     def __init__(self, time_span, time_interval, debuggable=False):
@@ -177,13 +178,13 @@ class DrawableMcl(Mcl, Drawable):
 
 class DrawableFastSlam(FastSlam, Drawable):
     def __init__(
-            self, init_pose, particle_num, landmark_num,
+            self, init_pose, particles_,
             motion_noise_stds={
                 'nn': 0.19, 'no': 1e-5,
                 'on': 0.13, 'oo': 0.20},
             distance_dev_rate=0.14, direction_dev=0.05):
         FastSlam.__init__(
-                self, map_, init_pose, landmark_num, motion_noise_stds,
+                self, init_pose, particles_, motion_noise_stds,
                 distance_dev_rate, direction_dev)
 
     def draw(self, ax, elems, **fkwds):
@@ -203,7 +204,7 @@ class DrawableFastSlam(FastSlam, Drawable):
         elems.append(ax.quiver(xs, ys, vxs, vys,
             angles='xy', scale_units='xy', scale=1.5, color='blue', alpha=0.5))
 
-        self._ml.map.draw(ax, elems)
+        self._ml.map.draw(ax, elems, estimation=True)
 
 
 class DrawableExtendedKalmanFilter(ExtendedKalmanFilter, Drawable):
@@ -238,7 +239,10 @@ class DrawablePoint2DLandmark(Point2DLandmark, Drawable):
         Point2DLandmark.__init__(self, x, y)
 
     def draw(self, ax, elems, **fkwds):
-        u"""点ランドマークを散布図として描画する"""
+        u"""点ランドマークを散布図として描画する
+
+        分散に有効な値が入っている場合は楕円も描画する
+        """
         c = ax.scatter(
             self.pos[0], self.pos[1],
             s=100, marker='*', label='landmark', color='orange')
@@ -249,24 +253,26 @@ class DrawablePoint2DLandmark(Point2DLandmark, Drawable):
                 'id:' + str(self.id), fontsize=10))
 
 
-class Point2DLandmarkEstimated(Point2DLandmarkEstimated, Drawable):
+class DrawablePoint2DLandmarkEstimated(Point2DLandmarkEstimated, Drawable):
     def __init__(self):
-        Point2DLandmarkEstimated.__init__()
+        Point2DLandmarkEstimated.__init__(self)
 
     def draw(self, ax, elems, **fkwds):
-        if self._cov is None:
-            return
+        u"""点ランドマークを散布図として描画する
 
+        分散に有効な値が入っている場合は楕円も描画する
+        """
+        if self.cov is None:
+            return
         c = ax.scatter(
             self.pos[0], self.pos[1],
-            s=100, marker='*', label='landmarks', color='blue')
+            s=100, marker='*', label='e_landmark', color='blue')
         elems.append(c)
         elems.append(
             ax.text(
                 self.pos[0], self.pos[1],
                 'id:' + str(self.id), fontsize=10))
-
-        e = utilities.sigma_ellipse(self.pos, self._cov, 3)
+        e = utilities.sigma_ellipse(self.pos, self.cov, 3)
         elems.append(ax.add_patch(e))
 
 

@@ -17,4 +17,4 @@ class Point2DLandmark():
 class Point2DLandmarkEstimated(Point2DLandmark):
     def __init__(self):
         super().__init__(0., 0.)
-        self._cov = None
+        self.cov = None

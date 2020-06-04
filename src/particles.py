@@ -81,17 +81,15 @@ class SimpleParticle(Particle):
 
 
 class MapParticle(SimpleParticle):
-    def __init__(self, init_pose, weight, map_, landmarks):
+    def __init__(self, init_pose, weight, map_):
         super().__init__(init_pose, weight)
-        self._map = map_
-        for landmark in landmarks:
-            self._map.append_landmark(landmarks)
+        self.map = map_
 
     def observation_update(
             self, observation, distance_dev_rate, direction_dev):
         for d in observation:
             z = d[0]
-            landmark = self._map.landmarks[d[1]]
+            landmark = self.map.landmarks()[d[1]]
 
             if landmark.cov is None:
                 self._init_landmark_estimation(
