@@ -212,11 +212,22 @@ class ExtendedKalmanFilter(Estimator):
 
         theta = self._belief.mean[2]
 
+        # 指令の共分散行列
         M = utilities.matM(nu, omega, time, self._motion_noise_stds)
+
+        # 状態遷移関数の線形近似（テイラー展開）時の係数行列
         A = utilities.matA(nu, omega, time, theta)
+
+        # 状態空間における共分散行列
+        # 指令値空間の共分散行列をAで挟むことで状態空間における共分散行列に写像できる
+        # 線形近似した状態のため
+        # 確率ベクトルxとy=Ax+Bそれぞれの共分散Zx, Zyには Zy = A Zx A^Tの関係がある
+        R = A @ M @ A.T
+
+        # 信念分布を線形近似するときに使うヤコビ行列
         F = utilities.matF(nu, omega, time, theta)
 
-        self._belief.cov = F @ self._belief.cov @ F.T + A @ M @ A.T
+        self._belief.cov = F @ self._belief.cov @ F.T + R
         self._belief.mean = robots.IdealRobot.state_transition(nu, omega, time, self._belief.mean)
         self._pose = self._belief.mean
 
