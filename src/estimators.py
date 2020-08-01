@@ -208,7 +208,7 @@ class ExtendedKalmanFilter(Estimator):
     def motion_update(self, nu, omega, time):
         # 0割回避
         if abs(omega) < 1e-5:
-            omega = 1e-5
+            omega = 1e-5 if omega > 0. else -1e-5
 
         theta = self._belief.mean[2]
 
