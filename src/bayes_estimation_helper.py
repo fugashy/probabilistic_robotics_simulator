@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from copy import deepcopy
 import pandas as pd
 
 
@@ -9,6 +10,8 @@ class SensorValueAndTimeWithBayes():
     数式見てもわかったきになるだけだった
     """
     def __init__(self, filename):
+        # csvのデータ読み込み
+        # 時刻とセンサデータが対応しているもの
         data = pd.read_csv(
             filename, delimiter=' ', header=None,
             names=('date', 'time', 'ir', 'lidar'))
@@ -66,7 +69,10 @@ class SensorValueAndTimeWithBayes():
             return p_t[0]
 
     def joint_z_t(self):
-        return self._joint_z_t
+        u"""同時確率分布P(z, t)を返す
+        ある時刻tに，センサ値zが得られる確率
+        """
+        return deepcopy(self._joint_z_t)
 
     def cond_z_t(self):
         return self._joint_z_t / self.marginalize_in('t')
@@ -100,7 +106,7 @@ class BayesianFilter():
                 'col of p_y({0}) should be the same as col of cond_x_y({1})'.format(
                     p_y.shape[0], self._cond_x_y.shape[1]))
 
-        # p(x|y)p(y)
+        # p(x|y)p(y)を求める
         joint_x_y_and_y = []
         indices = []
         for y in list(p_y.index):
