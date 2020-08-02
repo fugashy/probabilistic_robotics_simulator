@@ -227,8 +227,15 @@ class ExtendedKalmanFilter(Estimator):
         # 信念分布を線形近似するときに使うヤコビ行列
         F = utilities.matF(nu, omega, time, theta)
 
+        # 信念分布のばらつきの更新
+        # 分散の加法定理
         self._belief.cov = F @ self._belief.cov @ F.T + R
+
+        # 信念分布の平均の更新
+        # 現在の信念の平均から理想的な制御を行う
         self._belief.mean = robots.IdealRobot.state_transition(nu, omega, time, self._belief.mean)
+
+        # 更新
         self._pose = self._belief.mean
 
     def observation_update(self, observation):
