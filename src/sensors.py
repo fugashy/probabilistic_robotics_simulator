@@ -94,10 +94,15 @@ class IdealCamera(Sensor):
 class Camera(IdealCamera):
     def __init__(self,
             env_map,
-            distance_range=(0.5, 6.0), direction_range=(-pi / 3., pi / 3),
-            distance_noise_rate=0.05, direction_noise=pi/180.,
-            distance_bias_rate_stddev=0.05, direction_bias_stddev=pi/180.,
-            phantom_prob=0.0, phantom_range_x=(-5., 5.), phantom_range_y=(-5., 5.),
+            distance_range=(0.5, 6.0),
+            direction_range=(-pi / 3., pi / 3),
+            distance_noise_rate=0.1,
+            direction_noise=pi/90.,
+            distance_bias_rate_stddev=0.1,
+            direction_bias_stddev=pi/90.,
+            phantom_prob=0.0,
+            phantom_range_x=(-5., 5.),
+            phantom_range_y=(-5., 5.),
             oversight_prob=0.1,
             occulusion_prob=0.0):
         super().__init__(env_map, distance_range, direction_range)
@@ -129,15 +134,16 @@ class Camera(IdealCamera):
         for lm in self.map.landmarks():
             z = self.observation_function(cam_pose, lm.pos)
             z = self._phantom(cam_pose, z)
+            z = self._occulusion(z)
             z = self._oversight(z)
             if self._visible(z):
-                z = self._noise(z)
                 z = self._bias(z)
+                z = self._noise(z)
                 observed.append((z, lm.id))
 
         self.lastdata = observed
 
-        return self.lastdata
+        return observed
 
     def _noise(self, relpos):
         ell = norm.rvs(loc=relpos[0], scale=relpos[0] * self.distance_noise_rate)
