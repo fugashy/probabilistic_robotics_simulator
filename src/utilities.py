@@ -35,18 +35,17 @@ def matM(nu, omega, dt, stds):
     Returns:
         共分散行列M_{t}
     """
-    # 各標準偏差を求める
-    sigma_nn = stds['nn'] * sqrt(abs(nu) / dt)
-    sigma_no = stds['no'] * sqrt(abs(omega) / dt)
-    sigma_on = stds['on'] * sqrt(abs(nu) / dt)
-    sigma_oo = stds['oo'] * sqrt(abs(omega) / dt)
+    cov_nn = pow(stds['nn'], 2.) * abs(nu) / dt
+    cov_no = pow(stds['no'], 2.) * abs(omega) / dt
+    cov_on = pow(stds['on'], 2.) * abs(nu) / dt
+    cov_oo = pow(stds['oo'], 2.) * abs(omega) / dt
 
     # 2乗すると分散になる
     # 分散の加法性から，速度，角速度それぞれの成分を足し合わせる
     return np.diag(
         [
-            sigma_nn**2 + sigma_no**2,
-            sigma_on**2 + sigma_oo**2,
+            cov_nn + cov_no,
+            cov_on + cov_oo,
         ])
 
 def matA(nu, omega, dt, theta):
